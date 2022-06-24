@@ -16,6 +16,12 @@ if ((process.env.NODE_ENV !== 'production')) {
 }
 const compileCache = Object.create(null);
 function compileToFunction(template, options) {
+    
+    let isOnError = false; // FIV5S_CHANGES
+    let errorDesc = ''; // FIV5S_CHANGES
+    let codeFrame = ''; // FIV5S_CHANGES
+
+
     if (!isString(template)) {
         if (template.nodeType) {
             template = template.innerHTML;
@@ -27,6 +33,7 @@ function compileToFunction(template, options) {
     }
     const key = template;
     const cached = compileCache[key];
+    
     if (cached) {
         return cached;
     }
@@ -41,26 +48,69 @@ function compileToFunction(template, options) {
         // by the server, the template should not contain any user data.
         template = el ? el.innerHTML : ``;
     }
-    const { code } = compile(template, extend({
+
+     // FIV5S_CHANGES
+    let { code } = compile(template, extend({
         hoistStatic: true,
         onError: (process.env.NODE_ENV !== 'production') ? onError : undefined,
         onWarn: (process.env.NODE_ENV !== 'production') ? e => onError(e, true) : NOOP
     }, options));
+
     function onError(err, asWarning = false) {
+        isOnError = true;
+        
         const message = asWarning
             ? err.message
             : `Template compilation error: ${err.message}`;
-        const codeFrame = err.loc &&
+        codeFrame = err.loc &&
             generateCodeFrame(template, err.loc.start.offset, err.loc.end.offset);
+
+        errorDesc = message;
         warn(codeFrame ? `${message}\n${codeFrame}` : message);
     }
     // The wildcard import results in a huge object with every export
     // with keys that cannot be mangled, and can be quite heavy size-wise.
     // In the global build we know `Vue` is available globally so we can avoid
     // the wildcard object.
-    const render = (new Function('Vue', code)(runtimeDom));
+
+
+    // FIV5S CHANGES: 
+    // If template is not valid, return "Invalid template" block instead of
+    // rendering the invalid code block.
+
+    const getErrorHTMLCode = (customMessage) => {
+        let errorBlockMsg = (!!customMessage) ?  customMessage: ``
+        errorBlockMsg = `ESTORE:: Invalid Template! 
+${errorDesc}
+${customMessage}`
+  
+        return `const _Vue = Vue
+
+        return function render(_ctx, _cache) {
+        with (_ctx) {
+            const { openBlock: _openBlock, createElementBlock: _createElementBlock } = _Vue
+        
+            return (_openBlock(), _createElementBlock("div", {style:"color: #e37d5d; font-family: monospace; text-align: left; white-space: pre-wrap;"}, \`${errorBlockMsg}\`))
+        }
+        }`;
+    }
+
+    if(isOnError){
+        code = getErrorHTMLCode(codeFrame)
+    }
+    
+    let render;
+    try{
+        //console.log(code)
+        render = (new Function('Vue', code)(runtimeDom));
+    }catch{
+        render = (new Function('Vue', getErrorHTMLCode('ESTORE:: Unknown Template Error'))(runtimeDom));
+    }
+    
     render._rc = true;
-    return (compileCache[key] = render);
+    let returnData = (compileCache[key] = render)
+    
+    return returnData;
 }
 registerRuntimeCompiler(compileToFunction);
 
