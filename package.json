@@ -64,7 +64,7 @@
   "dependencies": {
     "@vue/shared": "3.2.23",
     "@vue/compiler-dom": "3.2.23",
-    "@vue/runtime-dom": "3.2.23",
+    "@vue/runtime-dom": "git+https://github.com/mandrx/vue-runtime-dom.git",
     "@vue/compiler-sfc": "3.2.23",
     "@vue/server-renderer": "3.2.23"
   }
