@@ -63,7 +63,7 @@
   "homepage": "https://github.com/vuejs/vue-next/tree/master/packages/vue#readme",
   "dependencies": {
     "@vue/shared": "3.2.23",
-    "@vue/compiler-dom": "3.2.23",
+    "@vue/compiler-dom": "git+https://github.com/mandrx/vue-compiler-dom.git",
     "@vue/runtime-dom": "git+https://github.com/mandrx/vue-runtime-dom.git",
     "@vue/compiler-sfc": "3.2.23",
     "@vue/server-renderer": "3.2.23"
